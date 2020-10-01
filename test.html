@@ -2,24 +2,19 @@
 <html>
   <head>
     <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
     <title></title>
     <meta name="description" content="" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <link rel="stylesheet" href="style.css" />
-
-    <script type="text/javascript" src="index.js"></script>
-    <script type="text/javascript" src="exchangeinfo.js"></script>
-    <script type="text/javascript" src="data_fetch.js" async defer></script>
-
+    <link rel="stylesheet" href="" />
   </head>
-
   <body>
-    <h2>Binance BTCUSDT Chart</h2>
-    <select onCharge="LoadCharts();" id="pairs"></select>
     <div class="data-container" type="text" id="dc"></div>
+    <br />
     <div class="tradingview-widget-container" id="tvchart"></div>
-  </body>
 
+    <script src="" async defer></script>
+  </body>
   <script
     type="text/javascript"
     src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/2.3.0/socket.io.js"
@@ -42,33 +37,43 @@
     rel="stylesheet"
   />
   <script src="https://gitcdn.github.io/bootstrap-toggle/2.2.2/js/bootstrap-toggle.min.js"></script>
-  <script>
-    //PASS ALL THE SYMBOLS
-    var sym = exchangeInfo.symbols,
-      markup = "";
-    sym.forEach((d) => {
-      markup += '<option value="' + d.symbol + '">' + d.symbol + "</option>";
-    });
-    document.getElementById("pairs").innerHTML = markup;
+  <script async defer>
+    var msg = {
+      jsonrpc: "2.0",
+      method: "public/subscribe",
+      id: 42,
+      params: {
+        channels: ["deribit_price_index.btc_usd"],
+      },
+    };
+    var ws = new WebSocket("wss://test.deribit.com/ws/api/v2");
 
-    LoadCharts();
-    function LoadCharts() {
-      let symbol = document.getElementById("pairs").value;
-      //RENDER CHART
-      new TradingView.widget({
-        autosize: true,
-        symbol: "BINANCE:" + symbol,
-        interval: "5",
-        timezone: "Asia/Kolkata",
-        theme: "Light",
-        style: "1",
-        locale: "in",
-        toolbar_bg: "#f1f3f6",
-        enable_publishing: false,
-        allow_symbol_change: true,
-        studies: ["BB@tv-basicstudies"],
-        container_id: "tvchart",
-      });
+    function printf(message) {
+      var div = document.getElementById("dc");
+      div.innerHTML = message;
     }
+
+    ws.onmessage = function (e) {
+      // do something with the notifications...
+      js_data = JSON.parse(e.data);
+
+      try {
+        d = js_data.params.data;
+        msg =
+          "received from Deribit: " +
+          d["index_name"] +
+          ": " +
+          d["price"] +
+          "@ " +
+          d["timestamp"];
+        printf(msg);
+      } catch (error) {
+        console.log(error);
+      }
+    };
+
+    ws.onopen = function () {
+      ws.send(JSON.stringify(msg));
+    };
   </script>
 </html>
